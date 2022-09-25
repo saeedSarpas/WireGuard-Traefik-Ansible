@@ -1,0 +1,14 @@
+---
+- name: Install Traefik
+  hosts: managers[0]
+
+  vars:
+    parent_dir: "/var/lib/my-server"
+    traefik_dir: "{{ parent_dir }}/traefik"
+    letsencrypt_dir: "{{ traefik_dir }}/letsencrypt"
+
+  roles:
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ parent_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ traefik_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ letsencrypt_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+    - { role: ../roles/traefik, become: yes, dir: { traefik: "{{ traefik_dir }}", letsencrypt: "{{ letsencrypt_dir }}" } }

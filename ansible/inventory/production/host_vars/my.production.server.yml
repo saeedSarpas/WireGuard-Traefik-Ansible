@@ -1,0 +1,24 @@
+---
+inventory_hostname: my.production.server
+
+domain: <my-server-domain>
+
+swarm_master: true
+
+ansible:
+  host: <my-server-domain>
+  user: <my-server-user>
+  become_user: root
+  become_pass: <my-server-password>
+
+traefik:
+  user: admin
+  pass: <traefik-password>
+
+portainer:
+  user: admin
+  pass: <portainer-password>
+  admin_port: 9000
+  tunnel_port: 8000
+
+production: true

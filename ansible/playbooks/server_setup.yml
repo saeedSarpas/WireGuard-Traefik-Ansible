@@ -1,0 +1,8 @@
+---
+- name: Server setup
+  hosts: "{{ target_hosts }}"
+  roles:
+    - { role: ../roles/server_setup/upgrade, become: yes }
+    - { role: ../roles/server_setup/packages, become: yes }
+    - { role: ../roles/server_setup/users, become: yes }
+    - { role: ../roles/server_setup/ssh, become: yes }

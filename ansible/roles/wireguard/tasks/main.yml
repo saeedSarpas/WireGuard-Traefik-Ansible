@@ -1,0 +1,55 @@
+---
+- name: Set up dev/prod labels
+  set_fact:
+    default_abs_labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.udp.routers.wireguard-udp.service=wireguard-udp-svc"
+      - "traefik.udp.routers.wireguard-udp.entrypoints=wireguard"
+      - "traefik.udp.services.wireguard-udp-svc.loadbalancer.server.port=51820"
+
+- name: Remove Wireguard services
+  docker_swarm_service:
+    name: "{{ item }}"
+    state: absent
+  with_list:
+    - wireguard_wireguard
+
+- name: Deploy Wireguard stack
+  docker_stack:
+    name: wireguard
+    state: present
+    compose:
+      - version: "3.7"
+        services:
+          wireguard:
+            image: linuxserver/wireguard:v1.0.20210914-ls79
+            environment:
+              - "SERVERURL={{ domain }}"
+              - "SERVERPORT=51820"
+              - "PEERS=10"
+              - "PEERDNS=8.8.8.8"
+            volumes:
+              - "{{ dir.config }}:/config"
+              - "/usr/src:/usr/src"
+              - "/lib/modules:/lib/modules"
+            cap_add:
+              - NET_ADMIN
+              - SYS_MODULE
+            networks:
+              - traefik_net
+            deploy:
+              labels:
+                "{{ default_abs_labels }}"
+              mode: replicated
+              replicas: 1
+              placement:
+                constraints: [node.role == manager]
+
+        networks:
+          net:
+            driver: overlay
+            attachable: true
+          traefik_net:
+            external: true
+

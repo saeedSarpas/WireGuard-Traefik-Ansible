@@ -1,0 +1,64 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# Start the VMs by running `vagrant up`
+
+require 'fileutils'
+
+manager_nodes = 1
+base_private_ip = "192.168.56"
+base_vm_name = "ubuntuInstance"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2004"
+
+  (1..manager_nodes).each do |i|
+    config.vm.define "#{base_vm_name}#{i}" do |node|
+      instance = "#{base_vm_name}#{i}"
+      private_ip = "#{base_private_ip}.#{i+10}"
+
+      node.vm.hostname = instance
+
+      node.vm.network "private_network", ip: private_ip
+
+      node.vm.provider "virtualbox" do |vb|
+        vb.name = instance
+        vb.cpus = 1
+        vb.memory = "512"
+      end
+
+      node.vm.provision :shell, path: "bootstrap.sh"
+    end
+  end
+
+  setup_ssh_config_for_managers(manager_nodes, base_private_ip, base_vm_name)
+end
+
+def setup_ssh_config_for_managers(n_nodes, base_private_ip, base_vm_name)
+  include_config_d = "Include config.d/*"
+  ssh_config_file = "#{Dir.home}/.ssh/config"
+  ssh_config_dir = "#{Dir.home}/.ssh/config.d"
+  ssh_config_dir_manager = "#{Dir.home}/.ssh/config.d/vagrant.manager"
+
+  if not File.readlines(ssh_config_file).grep(/Include\ config\.d\/\*/).any?
+    File.open(ssh_config_file, "a").puts("\n#{include_config_d}")
+  end
+
+  FileUtils.mkdir_p ssh_config_dir
+
+  File.open(ssh_config_dir_manager, 'w') do |f|
+    (1..n_nodes).each do |i|
+      f.puts "Host vagrant.manager.#{i}"
+      f.puts "\tHostName #{base_private_ip}.#{i+10}"
+      f.puts "\tPort 22"
+      f.puts "\tUser vagrant"
+      f.puts "\tUserKnownHostsFile /dev/null"
+      f.puts "\tStrictHostKeyChecking no"
+      f.puts "\tPasswordAuthentication no"
+      f.puts "\tIdentityFile #{Dir.pwd}/.vagrant/machines/#{base_vm_name}#{i}/virtualbox/private_key"
+      f.puts "\tIdentitiesOnly yes"
+      f.puts "\tLogLevel FATAL"
+      f.puts ""
+    end
+  end
+end

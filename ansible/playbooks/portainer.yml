@@ -1,0 +1,15 @@
+---
+- name: Install Portainer
+  hosts: managers[0]
+
+  vars:
+    parent_dir: "/var/lib/my-server"
+    portainer_dir: "{{ parent_dir }}/portainer"
+    portainer_data_dir: "{{ portainer_dir }}/data"
+
+  roles:
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ parent_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ portainer_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ portainer_data_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+
+    - { role: ../roles/portainer, become: yes, dir: { portainer: "{{ portainer_dir }}", data: "{{ portainer_data_dir }}" } }

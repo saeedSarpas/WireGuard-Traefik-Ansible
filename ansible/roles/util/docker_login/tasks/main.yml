@@ -1,0 +1,13 @@
+---
+- name: Login to {{ registry.url }}
+  docker_login:
+    registry_url: "{{ registry.url }}"
+    username: "{{ registry.user }}"
+    password: "{{ registry.pass }}"
+    reauthorize: yes
+  # no_log: True
+
+# - name: Logout from {{ registry.url }}
+  # docker_login:
+    # state: absent
+  # no_log: True

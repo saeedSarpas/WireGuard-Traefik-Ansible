@@ -1,0 +1,14 @@
+---
+- name: Install Wireguard
+  hosts: managers[0]
+  vars:
+    parent_dir: "/var/lib/my-server"
+    wg_dir: "{{ parent_dir }}/wireguard"
+    wg_config_dir: "{{ wg_dir }}/config"
+
+  roles:
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ parent_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ wg_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+    - { role: ../roles/util/mkdir, become: yes, dir: { path: "{{ wg_config_dir }}", user: "{{ admin.user }}", group: "{{ admin.group }}", mode: "0755" } }
+
+    - { role: ../roles/wireguard, become: yes, dir: { config: "{{ wg_config_dir }}" } }

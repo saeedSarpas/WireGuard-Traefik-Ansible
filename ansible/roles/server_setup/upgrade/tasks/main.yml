@@ -1,0 +1,25 @@
+---
+- name: Import Docker Repositories GPG Keys
+  apt_key:
+    url: "{{ item }}"
+    state: present
+  with_items:
+    - "https://download.docker.com/linux/ubuntu/gpg"
+
+- name: Add Ubuntu Repos
+  apt_repository:
+    repo: "{{ item }}"
+    state: present
+  with_items:
+    - "deb https://download.docker.com/linux/ubuntu focal stable"
+
+- name: Update apt repo and cache
+  apt:
+    update_cache: yes
+    force_apt_get: yes
+    cache_valid_time: 3600
+
+- name: Upgrade system
+  apt:
+    upgrade: dist
+    force_apt_get: yes

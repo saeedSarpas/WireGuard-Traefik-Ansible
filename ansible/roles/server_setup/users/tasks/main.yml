@@ -1,0 +1,24 @@
+---
+- name: Ensure group admin exists
+  group:
+    name: "{{ admin.group }}"
+    gid: "{{ admin.gid }}"
+    state: present
+
+- name: Ensure group docker exists
+  group:
+    name: docker
+    state: present
+
+- name: Assign admin user to sudo, docker, and admin groups
+  user:
+    name: "{{ admin.user }}"
+    password:  "{{ admin.pass | password_hash('sha512') }}"
+    groups: "{{ item }}"
+    append: yes
+    state: present
+    shell: /bin/zsh
+  with_items:
+    - sudo
+    - docker
+    - "{{ admin.group }}"

@@ -1,0 +1,5 @@
+---
+- name: "Swarm setup"
+  hosts: "{{ target_hosts }}"
+  roles:
+    - { role: ../roles/swarm_setup, become: yes }

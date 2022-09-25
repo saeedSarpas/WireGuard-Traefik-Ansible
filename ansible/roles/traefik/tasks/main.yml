@@ -1,0 +1,79 @@
+---
+- name: Generate admin password hash
+  set_fact:
+    traefik_basic_auth: "{{ traefik.user }}:{{ traefik.pass | password_hash('md5') | replace('$', '$$') }}"
+
+- name: Remove Traefik services
+  docker_swarm_service:
+    name: "{{ item }}"
+    state: absent
+  with_list:
+    - traefik_traefik
+
+- name: Setting up dev/prod environment
+  set_fact:
+    default_commands:
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.swarmMode=true
+      - --providers.docker.exposedByDefault=false
+      - --entryPoints.web.address=:80
+      - --entryPoints.websecure.address=:443
+      - --entryPoints.wireguard.address=:51820/udp
+    dev_commands:
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    prod_commands:
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=websecure
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=s.sarpas@gmail.com
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+
+- name: Set up dev/prod labels
+  set_fact:
+    default_labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`{{ domain }}`) && (PathPrefix(`/traefik`) || PathPrefix(`/api`))"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.middlewares.traefik-redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.traefik-stripprefix.stripprefix.prefixes=/traefik"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users={{ traefik_basic_auth }}"
+      - "traefik.http.services.traefik-service.loadbalancer.server.port=8080"
+    dev_labels:
+      - "traefik.http.routers.traefik.middlewares=traefik-auth,traefik-stripprefix"
+    prod_labels:
+      - "traefik.http.routers.traefik.middlewares=traefik-redirectscheme,traefik-stripprefix,traefik-auth"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+
+- name: Deploy Traefik stack
+  docker_stack:
+    name: traefik
+    state: present
+    compose:
+      - version: '3.2'
+        services:
+          traefik:
+            image: traefik:v2.8.1
+            command:
+              "{{ default_commands + prod_commands if production else default_commands + dev_commands }}"
+            ports:
+              - "80:80"
+              - "443:443"
+              - "51820:51820/udp"
+            volumes:
+              - "{{ dir.letsencrypt }}:/letsencrypt"
+              - /var/run/docker.sock:/var/run/docker.sock
+            networks:
+              - net
+            deploy:
+              labels:
+                "{{ default_labels + prod_labels if production else default_labels + dev_labels }}"
+              mode: global
+              placement:
+                constraints: [node.role == manager]
+
+        networks:
+          net:
+            driver: overlay
+            attachable: true

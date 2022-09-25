@@ -1,0 +1,12 @@
+---
+# Users
+admin:
+  user: admin
+  uid: 1001
+  group: admin
+  gid: 1001
+  pass: <password>
+
+# Docker users
+docker_users:
+  - username: "{{ admin.user }}"
