@@ -5,11 +5,10 @@ domain: <my-server-domain>
 
 swarm_master: true
 
-ansible:
-  host: <my-server-domain>
-  user: <my-server-user>
-  become_user: root
-  become_pass: <my-server-password>
+ansible_host: <my-server-domain>
+ansible_user: <my-server-user>
+ansible_user: root
+ansible_pass: <my-server-password>
 
 traefik:
   user: admin
